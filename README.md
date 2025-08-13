@@ -68,7 +68,6 @@ docker compose --profile production up -d --build
 
 ### Frontend
 - **React** - UI library
-- **Vite** - Build tool and dev server
 - **Tailwind CSS** - Styling
 - **Axios** - HTTP client
 - **HTML5 Drag & Drop API** - For page reordering
@@ -132,3 +131,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
