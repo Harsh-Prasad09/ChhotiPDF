@@ -15,6 +15,13 @@ const ResultDisplay = ({ result, onReset }) => {
     return Math.round(((original - compressed) / original) * 100);
   };
 
+  // Determine display sizes and reduction; if backend indicated the original was used (no gain),
+  // show compressed size equal to original and reduction 0 (computed, not hard-coded).
+  const usedOriginal = result.usedOriginal === true;
+  const displayOriginalSize = result.originalSize || 0;
+  const displayCompressedSize = usedOriginal ? displayOriginalSize : (result.compressedSize || 0);
+  const displayReduction = usedOriginal ? 0 : calculateCompressionRatio(displayOriginalSize, displayCompressedSize);
+
   const handleDownload = async () => {
     if (result.url) {
       try {
@@ -172,25 +179,25 @@ const ResultDisplay = ({ result, onReset }) => {
         )}
 
         {/* File Size Comparison */}
-        {result.originalSize && result.compressedSize && (
+  {displayOriginalSize && (displayCompressedSize || displayCompressedSize === 0) && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <div className="text-center p-3 sm:p-4 bg-red-50 rounded-lg">
               <div className="text-xl sm:text-2xl font-bold text-red-600 mb-1">
-                {formatFileSize(result.originalSize)}
+    {formatFileSize(displayOriginalSize)}
               </div>
               <div className="text-sm text-red-600">Original Size</div>
             </div>
             
             <div className="text-center p-3 sm:p-4 bg-green-50 rounded-lg">
               <div className="text-xl sm:text-2xl font-bold text-green-600 mb-1">
-                {formatFileSize(result.compressedSize)}
+    {formatFileSize(displayCompressedSize)}
               </div>
               <div className="text-sm text-green-600">New Size</div>
             </div>
             
             <div className="text-center p-3 sm:p-4 bg-blue-50 rounded-lg">
               <div className="text-xl sm:text-2xl font-bold text-blue-600 mb-1">
-                {calculateCompressionRatio(result.originalSize, result.compressedSize)}%
+    {displayReduction}%
               </div>
               <div className="text-sm text-blue-600">Reduction</div>
             </div>
@@ -198,17 +205,17 @@ const ResultDisplay = ({ result, onReset }) => {
         )}
 
         {/* Progress Bar */}
-        {result.originalSize && result.compressedSize && (
+    {displayOriginalSize && (displayCompressedSize || displayCompressedSize === 0) && (
           <div className="mb-6 sm:mb-8">
             <div className="flex justify-between text-xs sm:text-sm text-slate-600 mb-2">
               <span>File size reduction</span>
-              <span>{calculateCompressionRatio(result.originalSize, result.compressedSize)}% smaller</span>
+        <span>{displayReduction}% smaller</span>
             </div>
             <div className="w-full bg-slate-200 rounded-full h-3">
               <div 
                 className="bg-gradient-to-r from-green-500 to-blue-500 h-3 rounded-full transition-all duration-1000"
                 style={{ 
-                  width: `${Math.min(100, calculateCompressionRatio(result.originalSize, result.compressedSize))}%` 
+          width: `${Math.min(100, Math.max(0, displayReduction))}%`
                 }}
               ></div>
             </div>

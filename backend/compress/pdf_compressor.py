@@ -195,9 +195,33 @@ async def compress_pdf(uploaded_file, output_folder=None, compression_level="med
             except Exception:
                 output_bytes = pdf_bytes
 
-        # Persist to disk
+        # If compression resulted in a larger file, keep the original instead
+        used_original = False
+        if len(output_bytes) >= original_size:
+            print("Compressed PDF is not smaller than original — keeping original file bytes")
+            output_bytes = pdf_bytes
+            used_original = True
+
+        # Persist to disk (log sizes for debugging)
+        print(f"[DEBUG] original_size={original_size} bytes; intended_output_size={len(output_bytes)} bytes")
         with open(output_path, "wb") as f:
             f.write(output_bytes)
+
+        # Post-write safety: ensure on-disk file is not larger than original
+        try:
+            written_size = os.path.getsize(output_path)
+            print(f"[DEBUG] written_size_after_first_write={written_size} bytes")
+            if written_size > original_size:
+                print("[DEBUG] written file larger than original — overwriting with original bytes")
+                # overwrite with original bytes
+                with open(output_path, "wb") as f:
+                    f.write(pdf_bytes)
+                output_bytes = pdf_bytes
+                used_original = True
+                print(f"[DEBUG] overwritten_with_original; final_size={len(output_bytes)} bytes")
+        except Exception as e:
+            # If we can't stat or overwrite, keep the current output_bytes as-is
+            print(f"[DEBUG] post-write safety check failed: {e}")
 
         # Verify written file
         try:
@@ -213,13 +237,16 @@ async def compress_pdf(uploaded_file, output_folder=None, compression_level="med
         print(f"PDF pages: {doc.page_count}")
         print(f"PDF Compression: {round(original_size/1024,2)}KB -> {round(len(output_bytes)/1024,2)}KB ({compression_level} level)")
 
+        # Final sizes (reflect what's on disk)
+        final_compressed_size = len(output_bytes)
         return {
             "originalSize": original_size,
-            "compressedSize": len(output_bytes),
+            "compressedSize": final_compressed_size,
             "path": output_path,
             "filename": output_filename,
             "compressionLevel": compression_level,
             "compressionDescription": level_desc.get(compression_level, "Compression"),
+            "usedOriginal": used_original,
         }
 
     except Exception as e:

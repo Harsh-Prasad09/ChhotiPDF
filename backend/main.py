@@ -48,9 +48,23 @@ async def compress_pdf_endpoint(file: UploadFile = File(...), compression_level:
             display_name = f"chhotipdf-{os.path.basename(original_base).replace(' ', '_')}.pdf"
         except Exception:
             display_name = result["filename"]
+
+        # Defensive clamp: if the written file on disk is larger than original, report original size and mark usedOriginal
+        try:
+            file_path = os.path.join(BASE_DIR, "app", "compressed_pdfs", result["filename"])
+            if os.path.exists(file_path):
+                on_disk = os.path.getsize(file_path)
+                if on_disk > result["originalSize"]:
+                    # Don't mutate stored file here (compressor may be updated later) but ensure API reports no negative reduction
+                    result["compressedSize"] = result["originalSize"]
+                    result["usedOriginal"] = True
+        except Exception:
+            pass
+
         return {
             "originalSize": result["originalSize"],
             "compressedSize": result["compressedSize"],
+            "usedOriginal": result.get("usedOriginal", False),
             "url": f"/download/pdf/{result['filename']}",
             "fileName": display_name,
             "compressionLevel": result["compressionLevel"],
@@ -86,9 +100,22 @@ async def compress_image_endpoint(file: UploadFile = File(...), compression_leve
         return JSONResponse(status_code=400, content={"error": f"Invalid compression level. Must be one of: {', '.join(valid_levels)}"})
     try:
         result = compress_image(file, compression_level=compression_level)
+
+        # Defensive clamp for images as well
+        try:
+            file_path = os.path.join(BASE_DIR, "app", "compressed_images", result["filename"])
+            if os.path.exists(file_path):
+                on_disk = os.path.getsize(file_path)
+                if on_disk > result["originalSize"]:
+                    result["compressedSize"] = result["originalSize"]
+                    result["usedOriginal"] = True
+        except Exception:
+            pass
+
         return {
             "originalSize": result["originalSize"],
             "compressedSize": result["compressedSize"],
+            "usedOriginal": result.get("usedOriginal", False),
             "url": f"/download/image/{result['filename']}",
             "fileName": result.get("display_filename", result["filename"]),
             "compressionLevel": result["compressionLevel"],
