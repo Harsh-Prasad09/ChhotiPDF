@@ -190,9 +190,10 @@ async def download_organized_pdf(filename: str):
     return JSONResponse(status_code=404, content={"error": "File not found"})
 
 # CORS Middleware
+# Restrict CORS to known frontend origins (Vercel deployment and localhost for development)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://chhotipdf.vercel.app", "http://localhost:5173"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

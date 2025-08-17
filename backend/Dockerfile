@@ -18,7 +18,10 @@ COPY . .
 RUN mkdir -p app/compressed_images app/compressed_pdfs app/merged_pdfs app/organized_pdfs app/split_pdfs
 
 # Expose port
-EXPOSE 8000
+# Default port (Cloud Run sets PORT at runtime)
+ENV PORT=8000
+EXPOSE ${PORT}
 
-# Command to run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Command to run the application; allow overriding PORT at runtime
+# Use a shell form so environment variable expansion works
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
