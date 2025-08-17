@@ -23,112 +23,119 @@ ChhotiPDF/
 
 ### Development (Docker Compose)
 
-```bash
-# In project root
-docker compose up
-```
+ # ChhotiPDF
 
-- Frontend: http://localhost:5173 (Vite dev server)
-- Backend: http://localhost:8000
-- Frontend uses VITE_API_BASE_URL from `.env.development` (http://localhost:8000)
+ Lightweight, local-first PDF utility: compression, merging, splitting, and page organization.
 
-Alternatively run manually without Docker:
+ This README focuses on local development (no frontend Docker). It provides clear steps for contributors and developers who fork this repository.
 
-1) Backend
-```bash
-cd backend
-pip install -r requirements.txt
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
+ ---
 
-2) Frontend
-```bash
-cd frontend
-npm install
-npm run dev -- --host 0.0.0.0
-```
+ ## Quick overview
 
-### Production (Docker Compose with Nginx)
+ - Frontend: React + Vite (runs locally with `npm run dev`)
+ - Backend: FastAPI (runs locally with Uvicorn)
+ - Frontend is intentionally not run with Docker during development — use Node.js + Vite locally for fast iteration.
 
-Build and run the backend behind Nginx, and serve the built frontend:
+ ---
 
-```bash
-# Build frontend image (multi-stage)
-docker build -t chhotipdf-frontend:prod -f frontend/Dockerfile.prod ./frontend
+ ## Prerequisites
 
-# Start backend and Nginx reverse proxy (profile)
-docker compose --profile production up -d --build
-```
+ - Node.js (v18+ recommended) and npm
+ - Python 3.11+ and pip
+ - Recommended (Windows PowerShell): run PowerShell as your terminal
 
-- Nginx serves the frontend at http://localhost
-- API is proxied at http://localhost/api -> backend:8000
-- Frontend `.env.production` uses `VITE_API_BASE_URL=/api`
+ ---
 
-## Technology Stack
+ ## Local development (step-by-step)
 
-### Frontend
-- **React** - UI library
-- **Tailwind CSS** - Styling
-- **Axios** - HTTP client
-- **HTML5 Drag & Drop API** - For page reordering
+ 1) Clone the repo and enter the project folder
 
-### Backend
-- **FastAPI** - Web framework
-- **PyMuPDF (fitz)** - PDF processing
-- **Python-multipart** - File upload handling
-- **Uvicorn** - ASGI server
+ ```powershell
+ git clone https://github.com/Harsh-Prasad09/ChhotiPDF.git
+ cd ChhotiPDF
+ ```
 
-## API Endpoints
+ 2) Backend (FastAPI)
 
-### PDF Compression
-- `POST /compress/pdf` - Compress PDF file
-- `GET /download/pdf/{filename}` - Download compressed PDF
+ ```powershell
+ cd backend
+ python -m venv .venv    # optional but recommended
+ .\.venv\Scripts\Activate.ps1
+ pip install -r requirements.txt
+ # Run the server (development mode)
+ uvicorn main:app --reload --host 0.0.0.0 --port 8000
+ ```
 
-### PDF Merging
-- `POST /merge/pdf` - Merge multiple PDF files
-- `GET /download/merged/{filename}` - Download merged PDF
+ - API will be available at: http://localhost:8000
 
-### PDF Splitting
-- `POST /split/pdf/preview` - Get PDF page previews
-- `POST /split/pdf/pages` - Split PDF by selected pages
-- `GET /download/split/{filename}` - Download split PDF
+ 3) Frontend (React + Vite)
 
-### PDF Organization
-- `POST /organize/pdf/preview` - Get PDF pages for organization
-- `POST /organize/pdf/pages` - Organize PDF pages
-- `GET /download/organized/{filename}` - Download organized PDF
+ ```powershell
+ # Open a new terminal and run from project root
+ cd frontend
+ npm install
+ # Start dev server
+ npm run dev
+ ```
 
-Notes:
-- In production behind Nginx, all endpoints are also available under `/api/*` (e.g., `/api/compress/pdf`).
+ - Frontend dev server default: http://localhost:5173
 
-## Contributing
+ ---
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+ ## Frontend environment
 
-## License
+ When running locally, ensure the frontend points to the backend via `frontend/.env.development`:
 
-MIT License
+ ```text
+ VITE_API_BASE_URL=http://localhost:8000
+ ```
 
-Copyright (c) 2025 Harsh Prasad
+ ---
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+ ## API quick reference
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+ - POST `/compress/pdf` - compress a single PDF file
+	 - form field: `file` (file), optional `compression_level` (light|medium|heavy)
+	 - returns JSON: `{ originalSize, compressedSize, url, fileName, compressionLevel, compressionDescription, usedOriginal? }`
+ - GET `/download/pdf/{filename}` - download compressed PDF
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+ - POST `/compress/image` - compress a single image file (jpg/png)
+ - POST `/merge/pdf` - merge multiple PDFs (send multiple `files` fields)
+ - POST `/split/pdf/preview` - preview pages
+ - POST `/split/pdf/pages` - split using selected pages
+ - POST `/organize/pdf/preview` - preview for organization
+ - POST `/organize/pdf/pages` - apply page reorder/delete
+
+ All endpoints are defined in `backend/main.py`.
+
+ ---
+
+ ## Compression behavior and safety
+
+ - The backend includes fallbacks so compressed output will not be worse than the original. If compression would increase file size, the API returns `usedOriginal: true` and `compressedSize` will be set to the original size.
+ - Server logs include debug messages for compression steps when running locally in development mode.
+
+ ---
+
+ ## Troubleshooting
+
+ - 500 errors: check backend terminal logs for tracebacks.
+ - CORS issues: when running frontend locally against local backend, ensure `VITE_API_BASE_URL` points to `http://localhost:8000` and backend CORS allows that origin (configured in `backend/main.py`).
+ - If you see negative reductions in the UI, update both frontend and backend from this repository and restart the servers (defensive clamps are present to avoid negative reductions).
+
+ ---
+
+ ## Contributing
+
+ 1. Fork the repository
+ 2. Create a branch
+ 3. Make changes and run locally
+ 4. Open a pull request with a clear description of the change
+
+ ---
+
+ ## License
+
+ MIT License — see the LICENSE file in the repository.
 
